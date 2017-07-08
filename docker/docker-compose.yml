@@ -1,0 +1,35 @@
+# coordinated:
+#   image: memex-dossier:latest
+#   command: coordinated -c /config.yaml
+#   ports: ["5932:5932"]
+#   volumes:
+#     - "../configs/config.yaml:/config.yaml"
+
+# coordinate_worker:
+#   image: memex-dossier:latest
+#   # the flow yaml defines the known job types
+#   command: sh -c "coordinate -c /config.yaml flow /opt/memex-dossier/configs/flow.yaml && coordinate_worker -c /config.yaml --foreground"
+#   links:
+#     - coordinated
+#   volumes:
+#     - "../configs/config.yaml:/config.yaml"
+
+memex_dossier:
+  image: memex-dossier:latest
+  ports: ["8083:57314"]
+  # links:
+  #   - coordinated
+  volumes:
+    - "../configs/config.yaml:/config.yaml"
+
+memex_dossier_elasticsearch:
+  image: elasticsearch:1.7
+  ports:
+    - "19203:9200"
+    - "19303:9300"
+  volumes:
+    - "./elasticsearch:/usr/share/elasticsearch/data"
+    - "./etc/elasticsearch:/usr/share/elasticsearch/config"
+  environment:
+    ES_HEAP_SIZE: 8G
+  command: elasticsearch

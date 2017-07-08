@@ -1,0 +1,87 @@
+machine:
+  python:
+    version: 2.7.12
+  services:
+    - elasticsearch
+  hosts:
+    packages.diffeo.com: 127.0.0.1
+    docker.diffeo.com: 127.0.0.1
+  post:
+    # connect to the Diffeo VPC
+    - "ssh -nN -L 8888:packages.diffeo.com:443 circleci@j.diffeo.com":
+        background: true
+    # setup pip.conf file to install from packages.diffeo.com
+    - |
+      mkdir -p ~/.pip
+      cat <<EOF > ~/.pip/pip.conf
+      [global]
+      index-url = https://${PYPI_USER}:${PYPI_PASS}@packages.diffeo.com:8888/pypi/
+      find-links = ~/deps/wheels
+
+      [install]
+      use-wheel = true
+      pre = true
+      upgrade = true
+
+      [wheel]
+      use-wheel = true
+      pre = true
+      wheel-dir = ~/deps/wheels
+      EOF
+
+checkout:
+  post:
+    # Recover from a shallow clone so that "git describe" does what we want
+    - git fetch --unshallow || true
+
+dependencies:
+  cache_directories:
+    - "~/deps/wheels"
+  pre:
+    - sudo apt-get update && sudo apt-get install libsnappy-dev
+  override:
+    - pip wheel . tox twine 'buildbot >=0.8.7, <0.9'
+    - pip install tox twine
+
+test:
+  pre:
+    - mkdir -p $CIRCLE_TEST_REPORTS/pytest
+  override:
+    - tox -- -n 4 -v --durations=10 --runslow --junitxml=$CIRCLE_TEST_REPORTS/pytest/junit.xml --elastic-address=localhost:9200
+  post:
+    - test $(python setup.py --version) != 0.0.0
+    - python setup.py sdist
+
+deployment:
+  master:
+    branch: master
+    commands:
+      - |
+        cat <<EOF >~/.pypirc
+        [distutils]
+        index-servers = internal
+        
+        [internal]
+        repository: https://packages.diffeo.com:8888
+        username: ${PYPI_USER}
+        password: ${PYPI_PASS}
+        EOF
+      - twine upload --repository internal dist/*.tar.gz
+      - pip install 'buildbot >=0.8.7, <0.9'
+      - >-
+        buildbot sendchange
+        --master=buildbot.diffeo.com:29989
+        --auth=$BUILDBOT_USER:$BUILDBOT_PASS
+        --vc=git
+        --codebase=$CIRCLE_PROJECT_REPONAME
+        --who="$(git show --no-patch --format='format:%an <%ae>' $CIRCLE_SHA1)"
+        --repository=$CIRCLE_REPOSITORY_URL
+        ${CIRCLE_BRANCH:+--branch=$CIRCLE_BRANCH}
+        --revision=$CIRCLE_SHA1
+        --comments="$(git show --no-patch --format='format:%B' $CIRCLE_SHA1)"
+        --when="$(git show --no-patch --format='format:%at' $CIRCLE_SHA1)"
+        ${CIRCLE_COMPARE_URL:+--revlink=$CIRCLE_COMPARE_URL}
+      
+general:
+  artifacts:
+    - dist

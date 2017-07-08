@@ -1,0 +1,15 @@
+*~
+*py[oc]
+.*.swp
+*.egg-info
+RELEASE-VERSION
+log/*
+*.log
+*~
+\#*
+\.\#*
+docker-ubuntu-demo
+build
+dist
+.cache
+.tox

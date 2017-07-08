@@ -1,0 +1,62 @@
+memex_dossier.models:
+  tfidf_path: /background-50000.tfidf
+  suggest_services:
+    - "https://www.google.com/complete/search?q=%(query)s&client=firefox"
+  google_api_search_key: INSERT KEY HERE
+  akagraph:
+    k_replicas: 1
+    hosts: "localhost:19203"
+    index_name: akagraph
+    bigrams_path: /bigrams-cyber1.lower.json.gz
+    hard_selectors:
+     - email
+     - phone
+     - skype
+    soft_selectors:
+     - username
+     - name
+
+memex_dossier.tags:
+  hosts: ['localhost:19203']
+  namespace: dossier01-memex
+
+coordinate:
+  address: ['coordinated', 5932]
+  namespace: m01
+  server:
+    host: '0.0.0.0'
+    port: 5932
+  job_queue:
+    snapshot_period_seconds: 60
+    snapshot_path_format: /tmp/coordinated.{timestamp}.snap
+    sqlite_path: /tmp/coordinated.sqlite
+    do_recover: true
+    delete_snapshots_beyond: 10
+    limit_completed_count: 100000
+    limit_completed_age: 604800
+
+kvlayer:
+  app_name: diffeo
+  namespace: m01
+  storage_type: redis #or alternatively, `postgrest` or `mysql`
+  storage_addresses: ['redis.diffeo.com:6379']
+
+
+logging:
+  root:
+    level: DEBUG
+
+
+streamcorpus_pipeline:
+  reader: from_local_chunks
+  incremental_transforms:
+   - pdf_to_text
+   - docx_to_text
+   - clean_html
+   - clean_visible
+   
+  writers:
+   - to_dossier_store
+
+  to_dossier_store:
+    tfidf_path: /background-50000.tfidf

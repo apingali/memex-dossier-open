@@ -1,0 +1,9 @@
+include memex_dossier/handles/enable1.txt
+include memex_dossier/handles/countries.txt
+include RELEASE-VERSION
+include version.py
+include LICENSE
+include README.md
+recursive-include dossier/models/web/static *
+include dossier/models/features/naivebayes.pkl
+include memex_dossier/handles/bigrams-cyber1.lower.json.gz

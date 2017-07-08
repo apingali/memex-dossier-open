@@ -1,0 +1,21 @@
+coordinate:
+  address: ['localhost', 5932]
+  namespace: m01
+
+memex_dossier.models:
+  tfidf_path: /background-50000.tfidf
+  suggest_services:
+    - "https://www.google.com/complete/search?q=%(query)s&client=firefox"
+  google_api_search_key: 
+  akagraph:
+    k_replicas: 1
+    hosts: ['localhost:9200']
+    index_name: akagraph
+    bigrams_path: /bigrams-cyber1.lower.json.gz
+    hard_selectors:
+     - email
+     - phone
+     - skype
+    soft_selectors:
+     - username
+     - name

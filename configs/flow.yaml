@@ -1,0 +1,21 @@
+# Usage:
+#   coordinate -c config.yaml flow flow.yaml
+
+flows:
+  ingest:
+    desc: ingest documents from open web asynchronously
+    min_gb: 3
+    module: dossier.models.linker
+    run_function: worker
+
+  dragnet:
+    desc: compute a pairwise distance matrix between all profiles and all documents
+    min_gb: 3
+    module: dossier.models.dragnet
+    run_function: worker
+
+  highlights:
+    desc: async construction of highlights
+    min_gb: 3
+    module: dossier.models.web.routes
+    run_function: highlights_worker
